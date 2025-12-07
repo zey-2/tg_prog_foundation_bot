@@ -33,6 +33,7 @@ from telegram.ext import (
 LOG = logging.getLogger(__name__)
 DEFAULT_TIMEZONE = "Asia/Singapore"
 SESSION_JSON_PATTERN = re.compile(r"\[\s*{.*}\s*\]", re.DOTALL)
+INFO_QUERY = 1
 
 
 @dataclass
@@ -244,14 +245,14 @@ def format_session_line(session: Session, tz: ZoneInfo) -> str:
     end_str = session.end.astimezone(tz).strftime("%H:%M")
     location = session.venue if session.venue else session.mode_location
     return (
-        f"{session.lecture} ({session.session_label}) — "
-        f"{start_str} to {end_str} ({tz.key}); {location}"
+        f"- {session.lecture} [{session.session_label}] | "
+        f"{start_str} to {end_str} ({tz.key}) | {location}"
     )
 
 
 def format_session_detail(session: Session, tz: ZoneInfo) -> str:
     lines = [
-        f"{session.lecture} — {session.session_label}",
+        f"{session.lecture} - {session.session_label}",
         f"Date & time: {session.start.astimezone(tz).strftime('%A, %Y-%m-%d %H:%M')} "
         f"to {session.end.astimezone(tz).strftime('%H:%M')} ({tz.key})",
         f"Mode/Location: {session.mode_location}",
@@ -335,10 +336,9 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "/start - subscribe to reminders",
         "/stop - unsubscribe",
         "/commands - show this commands list",
-        "/menu - refresh the command menu",
         "/next - show the next upcoming session",
         "/schedule - list all sessions",
-        "/info <lecture|date> - details for a lecture (e.g., 'Lecture 3' or '2025-12-13')",
+        "/info - then enter a lecture or date (e.g., 'Lecture 3' or '2025-12-13')",
         f"Times are shown in {tz.key}.",
     ]
     await update.message.reply_text("\n".join(lines))
@@ -359,21 +359,33 @@ def find_sessions_by_query(course: CourseData, query: str) -> List[Session]:
     return matches
 
 
-async def info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def info_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text(
+        "Which lecture or date do you want details for?\n"
+        "Example: Lecture 3 or 2025-12-13\n"
+        "Send /cancel to stop."
+    )
+    return INFO_QUERY
+
+
+async def info_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     course: CourseData = context.application.bot_data["course_data"]
     tz: ZoneInfo = context.application.bot_data["tz"]
-    if not context.args:
-        await update.message.reply_text(
-            "Usage: /info <lecture|date>\nExample: /info Lecture 3"
-        )
-        return
-    query = " ".join(context.args)
+    query = (update.message.text or "").strip()
     matches = find_sessions_by_query(course, query)
     if not matches:
-        await update.message.reply_text("No matching sessions found.")
-        return
+        await update.message.reply_text(
+            "No matching sessions found. Try another lecture/date or send /cancel."
+        )
+        return INFO_QUERY
     lines = [format_session_detail(session, tz) for session in matches]
     await update.message.reply_text("\n\n".join(lines))
+    return ConversationHandler.END
+
+
+async def info_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text("Cancelled. Send /info to search again.")
+    return ConversationHandler.END
 
 
 async def next_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -394,7 +406,14 @@ async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     course: CourseData = context.application.bot_data["course_data"]
     tz: ZoneInfo = context.application.bot_data["tz"]
     lines = ["Upcoming sessions:"]
+    current_date: Optional[str] = None
     for session in course.sessions:
+        date_str = session.start.astimezone(tz).strftime("%Y-%m-%d (%A)")
+        if date_str != current_date:
+            if current_date is not None:
+                lines.append("")
+            lines.append(date_str)
+            current_date = date_str
         lines.append(format_session_line(session, tz))
     await update.message.reply_text("\n".join(lines))
 
@@ -490,10 +509,15 @@ def build_application(token: str, course: CourseData, store: SubscriberStore, tz
     application.add_handler(CommandHandler("stop", stop))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(CommandHandler("commands", help_command))
-    application.add_handler(CommandHandler("menu", refresh_menu))
     application.add_handler(CommandHandler("next", next_session))
     application.add_handler(CommandHandler("schedule", schedule_command))
-    application.add_handler(CommandHandler("info", info))
+    application.add_handler(
+        ConversationHandler(
+            entry_points=[CommandHandler("info", info_start)],
+            states={INFO_QUERY: [MessageHandler(filters.TEXT & ~filters.COMMAND, info_query)]},
+            fallbacks=[CommandHandler("cancel", info_cancel)],
+        )
+    )
 
     schedule_reminders(application, course, tz)
     return application
@@ -505,32 +529,13 @@ async def set_bot_commands(application: Application) -> None:
         BotCommand("stop", "Unsubscribe from reminders"),
         BotCommand("help", "Show help and available commands"),
         BotCommand("commands", "Show available commands"),
-        BotCommand("menu", "Refresh the command menu"),
         BotCommand("next", "Show the next upcoming session"),
         BotCommand("schedule", "List all sessions"),
-        BotCommand("info", "Details for a lecture or date"),
+        BotCommand("info", "Look up a lecture or date"),
     ]
     await application.bot.set_my_commands(commands)
     await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
     LOG.info("Bot commands and menu button updated (global): %s", [c.command for c in commands])
-
-
-async def refresh_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = update.effective_chat.id if update.effective_chat else None
-    commands = [
-        BotCommand("start", "Subscribe to reminders"),
-        BotCommand("stop", "Unsubscribe from reminders"),
-        BotCommand("help", "Show help and available commands"),
-        BotCommand("commands", "Show available commands"),
-        BotCommand("menu", "Refresh the command menu"),
-        BotCommand("next", "Show the next upcoming session"),
-        BotCommand("schedule", "List all sessions"),
-        BotCommand("info", "Details for a lecture or date"),
-    ]
-    await context.bot.set_my_commands(commands)
-    await context.bot.set_chat_menu_button(chat_id=chat_id, menu_button=MenuButtonCommands())
-    LOG.info("Bot commands and menu button updated for chat %s", chat_id)
-    await update.message.reply_text("Menu refreshed. You may need to reopen the chat to see it.")
 
 
 async def main() -> None:
