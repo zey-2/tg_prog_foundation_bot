@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from telegram import (
     BotCommand,
+    BotCommandScopeAllPrivateChats,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     MenuButtonCommands,
@@ -271,6 +272,16 @@ def format_session_detail(session: Session, tz: ZoneInfo) -> str:
 
 
 def build_link_keyboard(session: Session, course: CourseData) -> Optional[InlineKeyboardMarkup]:
+    return build_link_keyboard_with_options(session, course, include_zoom=True, include_materials=True)
+
+
+def build_link_keyboard_with_options(
+    session: Session,
+    course: CourseData,
+    include_zoom: bool,
+    include_materials: bool,
+    include_attendance: bool = True,
+) -> Optional[InlineKeyboardMarkup]:
     rows: List[List[InlineKeyboardButton]] = []
     current_row: List[InlineKeyboardButton] = []
     mode_lower = session.mode_location.lower()
@@ -285,13 +296,16 @@ def build_link_keyboard(session: Session, course: CourseData) -> Optional[Inline
             rows.append(current_row)
             current_row = []
 
-    add_button("Join Zoom", session.zoom_link)
+    if include_zoom:
+        add_button("Join Zoom", session.zoom_link)
     add_button("Map", session.google_map)
-    add_button("Materials", course.materials_url)
-    add_button("Attendance QR", course.qr_attendance_url)
-    add_button("Attendance Check", course.attendance_check_url)
+    if include_materials:
+        add_button("Materials", course.materials_url)
     if not is_online:
         add_button("Carpark Info", course.carpark_info_url)
+    if include_attendance:
+        add_button("Attendance QR", course.qr_attendance_url)
+        add_button("Attendance Check", course.attendance_check_url)
 
     if current_row:
         rows.append(current_row)
@@ -335,13 +349,21 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "Commands:",
         "/start - subscribe to reminders",
         "/stop - unsubscribe",
-        "/commands - show this commands list",
         "/next - show the next upcoming session",
         "/schedule - list all sessions",
+        "/materials - get course materials link",
         "/info - then enter a lecture or date (e.g., 'Lecture 3' or '2025-12-13')",
         f"Times are shown in {tz.key}.",
     ]
     await update.message.reply_text("\n".join(lines))
+
+
+async def materials_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    course: CourseData = context.application.bot_data["course_data"]
+    if course.materials_url:
+        await update.message.reply_text(f"Course materials: {course.materials_url}")
+    else:
+        await update.message.reply_text("No materials link is configured.")
 
 
 def find_sessions_by_query(course: CourseData, query: str) -> List[Session]:
@@ -379,7 +401,18 @@ async def info_query(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         )
         return INFO_QUERY
     lines = [format_session_detail(session, tz) for session in matches]
-    await update.message.reply_text("\n\n".join(lines))
+    # Use attendance buttons when replying from /info
+    keyboard = build_link_keyboard_with_options(
+        matches[0],
+        course,
+        include_zoom=False,
+        include_materials=False,
+        include_attendance=True,
+    )
+    await update.message.reply_text(
+        "\n\n".join(lines),
+        reply_markup=keyboard,
+    )
     return ConversationHandler.END
 
 
@@ -398,7 +431,9 @@ async def next_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
     session = upcoming[0]
     message = format_session_detail(session, tz)
-    keyboard = build_link_keyboard(session, course)
+    keyboard = build_link_keyboard_with_options(
+        session, course, include_zoom=False, include_materials=False, include_attendance=True
+    )
     await update.message.reply_text(message, reply_markup=keyboard)
 
 
@@ -496,7 +531,6 @@ def build_application(token: str, course: CourseData, store: SubscriberStore, tz
         Application.builder()
         .token(token)
         .rate_limiter(AIORateLimiter())
-        .post_init(set_bot_commands)
         .build()
     )
     application.bot_data["course_data"] = course
@@ -508,9 +542,9 @@ def build_application(token: str, course: CourseData, store: SubscriberStore, tz
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("stop", stop))
     application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("commands", help_command))
     application.add_handler(CommandHandler("next", next_session))
     application.add_handler(CommandHandler("schedule", schedule_command))
+    application.add_handler(CommandHandler("materials", materials_command))
     application.add_handler(
         ConversationHandler(
             entry_points=[CommandHandler("info", info_start)],
@@ -525,17 +559,27 @@ def build_application(token: str, course: CourseData, store: SubscriberStore, tz
 
 async def set_bot_commands(application: Application) -> None:
     commands = [
-        BotCommand("start", "Subscribe to reminders"),
-        BotCommand("stop", "Unsubscribe from reminders"),
-        BotCommand("help", "Show help and available commands"),
-        BotCommand("commands", "Show available commands"),
+        BotCommand("materials", "Get course materials link"),
         BotCommand("next", "Show the next upcoming session"),
         BotCommand("schedule", "List all sessions"),
         BotCommand("info", "Look up a lecture or date"),
+        BotCommand("help", "Show help and available commands"),
+        BotCommand("start", "Subscribe to reminders"),
+        BotCommand("stop", "Unsubscribe from reminders"),
     ]
+    # Clear old command sets in case Telegram cached previous entries.
+    await application.bot.delete_my_commands()
+    await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
+
+    # Set commands for default scope and private chats explicitly.
     await application.bot.set_my_commands(commands)
+    await application.bot.set_my_commands(commands, scope=BotCommandScopeAllPrivateChats())
+
     await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
-    LOG.info("Bot commands and menu button updated (global): %s", [c.command for c in commands])
+    LOG.info(
+        "Bot commands/menu updated; commands: %s",
+        [c.command for c in commands],
+    )
 
 
 async def main() -> None:
@@ -560,6 +604,8 @@ async def main() -> None:
     app = build_application(token, course_data, store, tz, dry_run)
     LOG.info("Starting bot in %s (dry_run=%s)", tz.key, dry_run)
     await app.initialize()
+    LOG.info("Setting bot commands and menu…")
+    await set_bot_commands(app)
     await app.start()
     try:
         await app.updater.start_polling(drop_pending_updates=True)
