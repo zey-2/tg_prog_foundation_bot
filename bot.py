@@ -117,9 +117,7 @@ class SubscriberStore:
 
     def active_chat_ids(self) -> List[int]:
         with self._lock:
-            cur = self._conn.execute(
-                "SELECT chat_id FROM subscribers WHERE active=1"
-            )
+            cur = self._conn.execute("SELECT chat_id FROM subscribers WHERE active=1")
             return [row[0] for row in cur.fetchall()]
 
     def close(self) -> None:
@@ -292,7 +290,9 @@ def build_link_keyboard_with_options(
     rows: List[List[InlineKeyboardButton]] = []
     current_row: List[InlineKeyboardButton] = []
     mode_lower = session.mode_location.lower()
-    is_online = bool(session.zoom_link) or "zoom" in mode_lower or "online" in mode_lower
+    is_online = (
+        bool(session.zoom_link) or "zoom" in mode_lower or "online" in mode_lower
+    )
 
     def add_button(text: str, url: Optional[str]) -> None:
         nonlocal current_row
@@ -439,7 +439,11 @@ async def next_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     session = upcoming[0]
     message = format_session_detail(session, tz)
     keyboard = build_link_keyboard_with_options(
-        session, course, include_zoom=False, include_materials=False, include_attendance=True
+        session,
+        course,
+        include_zoom=False,
+        include_materials=False,
+        include_attendance=True,
     )
     await update.message.reply_text(message, reply_markup=keyboard)
 
@@ -473,7 +477,11 @@ async def send_session_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
     body = format_session_detail(session, tz)
     message = f"{heading}\n\n{body}"
     keyboard = build_link_keyboard_with_options(
-        session, course, include_zoom=False, include_materials=False, include_attendance=True
+        session,
+        course,
+        include_zoom=False,
+        include_materials=False,
+        include_attendance=True,
     )
 
     chat_ids = store.active_chat_ids()
@@ -502,7 +510,9 @@ def clear_existing_reminders(application: Application) -> None:
             job.schedule_removal()
 
 
-def schedule_reminders(application: Application, course: CourseData, tz: ZoneInfo) -> None:
+def schedule_reminders(
+    application: Application, course: CourseData, tz: ZoneInfo
+) -> None:
     if not application.job_queue:
         raise RuntimeError("Job queue is not available.")
     clear_existing_reminders(application)
@@ -513,25 +523,32 @@ def schedule_reminders(application: Application, course: CourseData, tz: ZoneInf
             application.job_queue.run_once(
                 send_session_reminder,
                 when=before_time,
-                data={"session_id": session.id, "kind": "before", "tag": "session_reminder"},
+                data={
+                    "session_id": session.id,
+                    "kind": "before",
+                    "tag": "session_reminder",
+                },
                 name=f"{session.id}-before",
             )
         if session.end > now:
             application.job_queue.run_once(
                 send_session_reminder,
                 when=session.end,
-                data={"session_id": session.id, "kind": "end", "tag": "session_reminder"},
+                data={
+                    "session_id": session.id,
+                    "kind": "end",
+                    "tag": "session_reminder",
+                },
                 name=f"{session.id}-end",
             )
     LOG.info("Scheduled reminders for %d sessions", len(course.sessions))
 
 
-def build_application(token: str, course: CourseData, store: SubscriberStore, tz: ZoneInfo, dry_run: bool) -> Application:
+def build_application(
+    token: str, course: CourseData, store: SubscriberStore, tz: ZoneInfo, dry_run: bool
+) -> Application:
     application = (
-        Application.builder()
-        .token(token)
-        .rate_limiter(AIORateLimiter())
-        .build()
+        Application.builder().token(token).rate_limiter(AIORateLimiter()).build()
     )
     application.bot_data["course_data"] = course
     application.bot_data["session_map"] = {s.id: s for s in course.sessions}
@@ -548,7 +565,11 @@ def build_application(token: str, course: CourseData, store: SubscriberStore, tz
     application.add_handler(
         ConversationHandler(
             entry_points=[CommandHandler("info", info_start)],
-            states={INFO_QUERY: [MessageHandler(filters.TEXT & ~filters.COMMAND, info_query)]},
+            states={
+                INFO_QUERY: [
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, info_query)
+                ]
+            },
             fallbacks=[CommandHandler("cancel", info_cancel)],
         )
     )
@@ -573,7 +594,9 @@ async def set_bot_commands(application: Application) -> None:
 
     # Set commands for default scope and private chats explicitly.
     await application.bot.set_my_commands(commands)
-    await application.bot.set_my_commands(commands, scope=BotCommandScopeAllPrivateChats())
+    await application.bot.set_my_commands(
+        commands, scope=BotCommandScopeAllPrivateChats()
+    )
 
     await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
     LOG.info(
