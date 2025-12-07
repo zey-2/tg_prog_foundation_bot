@@ -1,0 +1,10 @@
+name: tg-prog-foundation-bot
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - tzdata
+  - pip:
+      - python-telegram-bot[job-queue]>=21.6,<22

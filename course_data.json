@@ -1,0 +1,101 @@
+{
+  "title": "1198334 for Programming Foundations: Unlocking the Potential of AI-Powered Coding (Classroom, Synchronous and Asynchronous E-learning).",
+  "attendance_qr_url": "https://www.myskillsfuture.gov.sg/spface/splogin/select-session?course-run-code=RA637383",
+  "attendance_check_url": "https://www.myskillsfuture.gov.sg/api/take-attendance/RA637383",
+  "carpark_info_url": "https://www.ntu.edu.sg/about-us/visiting-ntu/carpark-information#Content_C018_Col00",
+  "materials_url": "https://drive.google.com/drive/folders/1TF75rb6q7E6oHqHnR2NHThscHVzoi0BF?usp=sharing",
+  "sessions": [
+    {
+      "id": "lecture-1-2025-12-08",
+      "lecture": "Lecture 1",
+      "session": "Single Session",
+      "date": "2025-12-08",
+      "start_time": "19:00",
+      "end_time": "22:00",
+      "mode_location": "Zoom",
+      "zoom_link": "https://ntu-sg.zoom.us/meeting/register/-h3VhUwgQ7usOYXoOCwvdQ",
+      "meeting_id": "861 0134 7300",
+      "passcode": "791053"
+    },
+    {
+      "id": "lecture-2-2025-12-10",
+      "lecture": "Lecture 2",
+      "session": "Single Session",
+      "date": "2025-12-10",
+      "start_time": "19:00",
+      "end_time": "22:00",
+      "mode_location": "Zoom",
+      "zoom_link": "https://ntu-sg.zoom.us/meeting/register/-h3VhUwgQ7usOYXoOCwvdQ",
+      "meeting_id": "861 0134 7300",
+      "passcode": "791053"
+    },
+    {
+      "id": "lecture-3-session-1-2025-12-13",
+      "lecture": "Lecture 3",
+      "session": "Session One",
+      "date": "2025-12-13",
+      "start_time": "10:00",
+      "end_time": "13:00",
+      "mode_location": "On-campus",
+      "venue": "SR902, Level 9, NTU@one-north Executive Centre, Buona Vista, S138664",
+      "google_map": "https://goo.gl/maps/KpvXFkWyXuHySNtB6"
+    },
+    {
+      "id": "lecture-3-session-2-2025-12-13",
+      "lecture": "Lecture 3",
+      "session": "Session Two",
+      "date": "2025-12-13",
+      "start_time": "14:00",
+      "end_time": "17:00",
+      "mode_location": "On-campus",
+      "venue": "SR902, Level 9, NTU@one-north Executive Centre, Buona Vista, S138664",
+      "google_map": "https://goo.gl/maps/KpvXFkWyXuHySNtB6"
+    },
+    {
+      "id": "lecture-4-2025-12-15",
+      "lecture": "Lecture 4",
+      "session": "Single Session",
+      "date": "2025-12-15",
+      "start_time": "19:00",
+      "end_time": "22:00",
+      "mode_location": "Zoom",
+      "zoom_link": "https://ntu-sg.zoom.us/meeting/register/-h3VhUwgQ7usOYXoOCwvdQ",
+      "meeting_id": "861 0134 7300",
+      "passcode": "791053"
+    },
+    {
+      "id": "lecture-5-2025-12-17",
+      "lecture": "Lecture 5",
+      "session": "Single Session",
+      "date": "2025-12-17",
+      "start_time": "19:00",
+      "end_time": "22:00",
+      "mode_location": "Zoom",
+      "zoom_link": "https://ntu-sg.zoom.us/meeting/register/-h3VhUwgQ7usOYXoOCwvdQ",
+      "meeting_id": "861 0134 7300",
+      "passcode": "791053"
+    },
+    {
+      "id": "lecture-6-session-1-2025-12-20",
+      "lecture": "Lecture 6",
+      "session": "Session One",
+      "date": "2025-12-20",
+      "start_time": "10:00",
+      "end_time": "13:00",
+      "mode_location": "On-campus",
+      "venue": "SR902, Level 9, NTU@one-north Executive Centre, Buona Vista, S138664",
+      "google_map": "https://goo.gl/maps/KpvXFkWyXuHySNtB6"
+    },
+    {
+      "id": "lecture-6-session-2-2025-12-20",
+      "lecture": "Lecture 6",
+      "session": "Session Two",
+      "date": "2025-12-20",
+      "start_time": "14:00",
+      "end_time": "17:00",
+      "mode_location": "On-campus",
+      "venue": "SR902, Level 9, NTU@one-north Executive Centre, Buona Vista, S138664",
+      "google_map": "https://goo.gl/maps/KpvXFkWyXuHySNtB6"
+    }
+  ]
+}
