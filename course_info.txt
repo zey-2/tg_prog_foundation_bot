@@ -1,0 +1,94 @@
+
+1198334 for Programming Foundations: Unlocking the Potential of AI-Powered Coding (Classroom, Synchronous and Asynchronous E-learning).
+
+QR code for marking attendance
+https://www.myskillsfuture.gov.sg/spface/splogin/select-session?course-run-code=RA637383
+For checking attendance
+https://www.myskillsfuture.gov.sg/api/take-attendance/RA637383
+
+[
+  {
+    "lecture": "Lecture 1",
+    "session": "Single Session",
+    "date": "2025-12-08",
+    "mode_location": "Zoom",
+    "zoom_link": "https://ntu-sg.zoom.us/meeting/register/-h3VhUwgQ7usOYXoOCwvdQ",
+    "meeting_id": "861 0134 7300",
+    "passcode": "791053",
+    "time": "19:00-22:00"
+  },
+  {
+    "lecture": "Lecture 2",
+    "session": "Single Session",
+    "date": "2025-12-10",
+    "mode_location": "Zoom",
+    "zoom_link": "https://ntu-sg.zoom.us/meeting/register/-h3VhUwgQ7usOYXoOCwvdQ",
+    "meeting_id": "861 0134 7300",
+    "passcode": "791053",
+    "time": "19:00-22:00"
+  },
+  {
+    "lecture": "Lecture 3",
+    "session": "Session One",
+    "date": "2025-12-13",
+    "mode_location": "On-campus",
+    "venue": "SR902, Level 9, NTU@one-north Executive Centre, Buona Vista, S138664",
+    "google_map": "https://goo.gl/maps/KpvXFkWyXuHySNtB6",
+    "time": "10:00-13:00"
+  },
+  {
+    "lecture": "Lecture 3",
+    "session": "Session Two",
+    "date": "2025-12-13",
+    "mode_location": "On-campus",
+    "venue": "SR902, Level 9, NTU@one-north Executive Centre, Buona Vista, S138664",
+    "google_map": "https://goo.gl/maps/KpvXFkWyXuHySNtB6",
+    "time": "14:00-17:00"
+  },
+  {
+    "lecture": "Lecture 4",
+    "session": "Single Session",
+    "date": "2025-12-15",
+    "mode_location": "Zoom",
+    "zoom_link": "https://ntu-sg.zoom.us/meeting/register/-h3VhUwgQ7usOYXoOCwvdQ",
+    "meeting_id": "861 0134 7300",
+    "passcode": "791053",
+    "time": "19:00-22:00"
+  },
+  {
+    "lecture": "Lecture 5",
+    "session": "Single Session",
+    "date": "2025-12-17",
+    "mode_location": "Zoom",
+    "zoom_link": "https://ntu-sg.zoom.us/meeting/register/-h3VhUwgQ7usOYXoOCwvdQ",
+    "meeting_id": "861 0134 7300",
+    "passcode": "791053",
+    "time": "19:00-22:00"
+  },
+  {
+    "lecture": "Lecture 6",
+    "session": "Session One",
+    "date": "2025-12-20",
+    "mode_location": "On-campus",
+    "venue": "SR902, Level 9, NTU@one-north Executive Centre, Buona Vista, S138664",
+    "google_map": "https://goo.gl/maps/KpvXFkWyXuHySNtB6",
+    "time": "10:00-13:00"
+  },
+  {
+    "lecture": "Lecture 6",
+    "session": "Session Two",
+    "date": "2025-12-20",
+    "mode_location": "On-campus",
+    "venue": "SR902, Level 9, NTU@one-north Executive Centre, Buona Vista, S138664",
+    "google_map": "https://goo.gl/maps/KpvXFkWyXuHySNtB6",
+    "time": "14:00-17:00"
+  }
+]
+
+Carpark Charges
+https://www.ntu.edu.sg/about-us/visiting-ntu/carpark-information#Content_C018_Col00
+
+
+Course Materials for the course can be accessed via this link
+https://drive.google.com/drive/folders/1TF75rb6q7E6oHqHnR2NHThscHVzoi0BF?usp=sharing
+
