@@ -271,15 +271,11 @@ def format_session_detail(session: Session, tz: ZoneInfo) -> str:
     return "\n".join(lines)
 
 
-def build_link_keyboard(session: Session, course: CourseData) -> Optional[InlineKeyboardMarkup]:
-    return build_link_keyboard_with_options(session, course, include_zoom=True, include_materials=True)
-
-
 def build_link_keyboard_with_options(
     session: Session,
     course: CourseData,
-    include_zoom: bool,
-    include_materials: bool,
+    include_zoom: bool = False,
+    include_materials: bool = False,
     include_attendance: bool = True,
 ) -> Optional[InlineKeyboardMarkup]:
     rows: List[List[InlineKeyboardButton]] = []
@@ -474,7 +470,9 @@ async def send_session_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
         heading = f"{session.lecture} has ended"
     body = format_session_detail(session, tz)
     message = f"{heading}\n\n{body}"
-    keyboard = build_link_keyboard(session, course)
+    keyboard = build_link_keyboard_with_options(
+        session, course, include_zoom=False, include_materials=False, include_attendance=True
+    )
 
     chat_ids = store.active_chat_ids()
     if not chat_ids:
@@ -604,7 +602,7 @@ async def main() -> None:
     app = build_application(token, course_data, store, tz, dry_run)
     LOG.info("Starting bot in %s (dry_run=%s)", tz.key, dry_run)
     await app.initialize()
-    LOG.info("Setting bot commands and menu…")
+    LOG.info("Setting bot commands and menu...")
     await set_bot_commands(app)
     await app.start()
     try:
