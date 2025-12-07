@@ -241,16 +241,6 @@ def load_course_data(path: str, tz: ZoneInfo) -> CourseData:
     return load_course_data_legacy(content, tz)
 
 
-def format_session_line(session: Session, tz: ZoneInfo) -> str:
-    start_str = session.start.astimezone(tz).strftime("%Y-%m-%d %H:%M")
-    end_str = session.end.astimezone(tz).strftime("%H:%M")
-    location = session.venue if session.venue else session.mode_location
-    return (
-        f"- {session.lecture} [{session.session_label}] | "
-        f"{start_str} to {end_str} ({tz.key}) | {location}"
-    )
-
-
 def format_session_detail(session: Session, tz: ZoneInfo) -> str:
     lines = [
         f"{session.lecture} - {session.session_label}",
@@ -268,6 +258,27 @@ def format_session_detail(session: Session, tz: ZoneInfo) -> str:
         lines.append(f"Passcode: {session.passcode}")
     if session.google_map:
         lines.append(f"Map: {session.google_map}")
+    return "\n".join(lines)
+
+
+def format_schedule_overview(course: CourseData, tz: ZoneInfo) -> str:
+    lines = [f"Upcoming sessions ({tz.key}):"]
+    current_date: Optional[str] = None
+    for session in course.sessions:
+        local_start = session.start.astimezone(tz)
+        local_end = session.end.astimezone(tz)
+        date_label = local_start.strftime("%Y-%m-%d (%A)")
+        if date_label != current_date:
+            if current_date is not None:
+                lines.append("")
+            lines.append(date_label)
+            current_date = date_label
+        lines.append(f"  - {session.lecture} ({session.session_label})")
+        lines.append(
+            f"    Time: {local_start.strftime('%H:%M')} to {local_end.strftime('%H:%M')}"
+        )
+        location = session.venue if session.venue else session.mode_location
+        lines.append(f"    Where: {location}")
     return "\n".join(lines)
 
 
@@ -436,17 +447,8 @@ async def next_session(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def schedule_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     course: CourseData = context.application.bot_data["course_data"]
     tz: ZoneInfo = context.application.bot_data["tz"]
-    lines = ["Upcoming sessions:"]
-    current_date: Optional[str] = None
-    for session in course.sessions:
-        date_str = session.start.astimezone(tz).strftime("%Y-%m-%d (%A)")
-        if date_str != current_date:
-            if current_date is not None:
-                lines.append("")
-            lines.append(date_str)
-            current_date = date_str
-        lines.append(format_session_line(session, tz))
-    await update.message.reply_text("\n".join(lines))
+    message = format_schedule_overview(course, tz)
+    await update.message.reply_text(message)
 
 
 async def send_session_reminder(context: ContextTypes.DEFAULT_TYPE) -> None:
