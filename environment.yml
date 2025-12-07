@@ -7,4 +7,5 @@ dependencies:
   - pip
   - tzdata
   - pip:
-      - python-telegram-bot[job-queue]>=21.6,<22
+      - python-telegram-bot[job-queue,rate-limiter]>=21.6,<22
+      - python-dotenv>=1.0,<2

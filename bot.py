@@ -11,12 +11,22 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 from zoneinfo import ZoneInfo
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from dotenv import load_dotenv
+from telegram import (
+    BotCommand,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    MenuButtonCommands,
+    Update,
+)
 from telegram.ext import (
     AIORateLimiter,
     Application,
     CommandHandler,
     ContextTypes,
+    ConversationHandler,
+    MessageHandler,
+    filters,
 )
 
 
@@ -262,6 +272,8 @@ def format_session_detail(session: Session, tz: ZoneInfo) -> str:
 def build_link_keyboard(session: Session, course: CourseData) -> Optional[InlineKeyboardMarkup]:
     rows: List[List[InlineKeyboardButton]] = []
     current_row: List[InlineKeyboardButton] = []
+    mode_lower = session.mode_location.lower()
+    is_online = bool(session.zoom_link) or "zoom" in mode_lower or "online" in mode_lower
 
     def add_button(text: str, url: Optional[str]) -> None:
         nonlocal current_row
@@ -277,7 +289,8 @@ def build_link_keyboard(session: Session, course: CourseData) -> Optional[Inline
     add_button("Materials", course.materials_url)
     add_button("Attendance QR", course.qr_attendance_url)
     add_button("Attendance Check", course.attendance_check_url)
-    add_button("Carpark Info", course.carpark_info_url)
+    if not is_online:
+        add_button("Carpark Info", course.carpark_info_url)
 
     if current_row:
         rows.append(current_row)
@@ -321,6 +334,8 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         "Commands:",
         "/start - subscribe to reminders",
         "/stop - unsubscribe",
+        "/commands - show this commands list",
+        "/menu - refresh the command menu",
         "/next - show the next upcoming session",
         "/schedule - list all sessions",
         "/info <lecture|date> - details for a lecture (e.g., 'Lecture 3' or '2025-12-13')",
@@ -462,6 +477,7 @@ def build_application(token: str, course: CourseData, store: SubscriberStore, tz
         Application.builder()
         .token(token)
         .rate_limiter(AIORateLimiter())
+        .post_init(set_bot_commands)
         .build()
     )
     application.bot_data["course_data"] = course
@@ -473,6 +489,8 @@ def build_application(token: str, course: CourseData, store: SubscriberStore, tz
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("stop", stop))
     application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("commands", help_command))
+    application.add_handler(CommandHandler("menu", refresh_menu))
     application.add_handler(CommandHandler("next", next_session))
     application.add_handler(CommandHandler("schedule", schedule_command))
     application.add_handler(CommandHandler("info", info))
@@ -481,10 +499,45 @@ def build_application(token: str, course: CourseData, store: SubscriberStore, tz
     return application
 
 
+async def set_bot_commands(application: Application) -> None:
+    commands = [
+        BotCommand("start", "Subscribe to reminders"),
+        BotCommand("stop", "Unsubscribe from reminders"),
+        BotCommand("help", "Show help and available commands"),
+        BotCommand("commands", "Show available commands"),
+        BotCommand("menu", "Refresh the command menu"),
+        BotCommand("next", "Show the next upcoming session"),
+        BotCommand("schedule", "List all sessions"),
+        BotCommand("info", "Details for a lecture or date"),
+    ]
+    await application.bot.set_my_commands(commands)
+    await application.bot.set_chat_menu_button(menu_button=MenuButtonCommands())
+    LOG.info("Bot commands and menu button updated (global): %s", [c.command for c in commands])
+
+
+async def refresh_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = update.effective_chat.id if update.effective_chat else None
+    commands = [
+        BotCommand("start", "Subscribe to reminders"),
+        BotCommand("stop", "Unsubscribe from reminders"),
+        BotCommand("help", "Show help and available commands"),
+        BotCommand("commands", "Show available commands"),
+        BotCommand("menu", "Refresh the command menu"),
+        BotCommand("next", "Show the next upcoming session"),
+        BotCommand("schedule", "List all sessions"),
+        BotCommand("info", "Details for a lecture or date"),
+    ]
+    await context.bot.set_my_commands(commands)
+    await context.bot.set_chat_menu_button(chat_id=chat_id, menu_button=MenuButtonCommands())
+    LOG.info("Bot commands and menu button updated for chat %s", chat_id)
+    await update.message.reply_text("Menu refreshed. You may need to reopen the chat to see it.")
+
+
 async def main() -> None:
     logging.basicConfig(
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", level=logging.INFO
     )
+    load_dotenv()
     token = os.environ.get("BOT_TOKEN")
     if not token:
         raise RuntimeError("BOT_TOKEN environment variable is required.")
